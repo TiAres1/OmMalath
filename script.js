@@ -1,29 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBkx13UA9elpV237vMGIu6rm4ZCeEM4afU",
-    authDomain: "absolute-bonsai-349616.firebaseapp.com",
-    databaseURL: "https://absolute-bonsai-349616-default-rtdb.firebaseio.com",
-    projectId: "absolute-bonsai-349616",
-    storageBucket: "absolute-bonsai-349616.firebasestorage.app",
-    messagingSenderId: "192867768515",
-    appId: "1:192867768515:web:6200aed1a39666e1deaa76",
-    measurementId: "G-MLW07L90BJ"
-};
-  
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
 let currentFile = null;
-const fileHistory = [];
+const fileHistory = JSON.parse(localStorage.getItem('fileHistory')) || [];
 
 document.getElementById('pdfInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
         try {
             const arrayBuffer = await file.arrayBuffer();
-            await PDFLib.PDFDocument.load(arrayBuffer);
+            await PDFLib.PDFDocument.load(arrayBuffer); // محاولة تحميل الملف للتحقق من صلاحيته
             currentFile = file;
             document.getElementById('removeBtn').disabled = false;
             document.querySelector('button[onclick="document.getElementById(\'pdfInput\').click()"]').textContent = file.name;
@@ -107,14 +90,14 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
 
-        const fileRef = push(ref(database, 'files'));
-        await set(fileRef, {
-            name: currentFile.name,
-            url: url
-        });
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = currentFile.name;
+        link.click();
 
         fileHistory.unshift(currentFile.name);
         updateFileHistory();
+        localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
 
     } catch (error) {
         showPopup('اوف وش صار؟ كلمي ابو ملاذ يصلحني');
@@ -173,3 +156,6 @@ window.addEventListener('beforeunload', () => {
     document.getElementById('pageRange').value = '';
     document.getElementById('removeBtn').disabled = true;
 });
+
+// Load file history on page load
+document.addEventListener('DOMContentLoaded', updateFileHistory);
