@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لأم ملاذ فقط</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <style>
+        #pageRange:focus {
+            outline: none;
+        }
+
+        .container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .message {
+            position: absolute;
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -80%);
+        }
+
+        .filename {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        .rotate-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .rotate-icon.rotate {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+
+<body class="bg-[#F652A0]">
+    <div class="container mx-auto p-4 flex justify-center">
+        <div class="w-full h-full bg-white rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold mb-6 text-center">احذفي اللي ماتبينه!</h1>
+            <hr class="mb-6">
+
+            <div class="space-y-4">
+                <input type="file" accept=".pdf" id="pdfInput" class="hidden">
+                <button onclick="document.getElementById('pdfInput').click()" class="text-white w-full py-2 px-4 bg-black rounded-lg text-right transition">اختاري الملف
+                </button>
+
+                <input type="text" id="pageRange" placeholder="حددي الصفحات"
+                    class="text-sm flex w-100 p-2 rounded-lg bg-black text-white">
+
+                <button id="removeBtn" disabled
+                    class="flex justify-center mx-auto w-1/4 bg-[#002AFF] text-white py-1 px-2 rounded-lg hover:bg-[#780604] transition disabled:opacity-50 disabled:cursor-not-allowed" style="margin-top: calc(1.9rem * calc(1 - var(--tw-space-y-reverse)));">
+                    احذفها
+                </button>
+            </div>
+
+            <hr class="my-6">
+
+            <div>
+                <h2 class="text-lg font-semibold mb-4 text-center">اخر عمايلك يا ست!</h2>
+                <ul id="fileHistory" class="space-y-2">
+                </ul>
+            </div>
+
+            <div class="text-sm text-gray-500 mt-6">
+                صنع بحب <span class="ml-1">❤️</span>
+            </div>
+        </div>
+    </div>
+    <div id="output" class="message"></div>
+    <div id="popupContainer" class="message"></div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
