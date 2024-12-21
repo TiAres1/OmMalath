@@ -90,11 +90,6 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
 
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = currentFile.name;
-        link.click();
-
         fileHistory.unshift(currentFile.name);
         updateFileHistory();
         localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
