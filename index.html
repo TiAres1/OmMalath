@@ -82,25 +82,7 @@
     <div id="output" class="message"></div>
     <div id="popupContainer" class="message"></div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-database-compat.js"></script>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA9lfQNMzI7-6P2GkskdJODE3yG-sVeAgg",
-            authDomain: "doctor-e941b.firebaseapp.com",
-            databaseURL: "https://doctor-e941b-default-rtdb.firebaseio.com",
-            projectId: "doctor-e941b",
-            storageBucket: "doctor-e941b.appspot.com",
-            messagingSenderId: "702360631722",
-            appId: "1:702360631722:web:791c786562f43b3428d3d3",
-            measurementId: "G-6RY5P2T1CJ"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-
         let currentFile = null;
         const fileHistory = JSON.parse(localStorage.getItem('fileHistory')) || [];
 
@@ -186,23 +168,26 @@
 
                 const newFileName = `new-${currentFile.name}`;
 
-                // Upload to Firebase Storage
-                const storageRef = firebase.storage().ref();
-                const fileRef = storageRef.child(`files/${newFileName}`);
-                await fileRef.put(blob);
-                const fileURL = await fileRef.getDownloadURL();
+                // Upload to file.io
+                const formData = new FormData();
+                formData.append('file', blob, newFileName);
 
-                // Save file metadata to Firebase Realtime Database
-                const dbRef = firebase.database().ref('fileHistory');
-                const newFileRef = dbRef.push();
-                await newFileRef.set({
-                    name: newFileName,
-                    url: fileURL,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                const response = await fetch('https://file.io', {
+                    method: 'POST',
+                    body: formData
                 });
 
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error('Failed to upload file');
+                }
+
+                const fileURL = result.link;
+
+                // Save file metadata to localStorage
                 fileHistory.unshift(newFileName);
                 localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
+                localStorage.setItem(newFileName, fileURL);
 
                 updateFileHistory();
 
@@ -228,26 +213,20 @@
             <li class="flex items-center gap-2">
                 <span class="text-gray-600 text-sm filename">${filename}</span>
                 <span class="flex-grow border-t border-gray-300 mx-2"></span>
-                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFileFromFirebase('${filename}')"></i>
+                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('${filename}')"></i>
             </li>
         `)
                 .join('');
         }
 
-        function downloadFileFromFirebase(filename) {
-            const dbRef = firebase.database().ref('fileHistory');
-            dbRef.orderByChild('name').equalTo(filename).once('value', snapshot => {
-                const fileData = snapshot.val();
-                if (fileData) {
-                    const fileURL = Object.values(fileData)[0].url;
-                    const link = document.createElement('a');
-                    link.href = fileURL;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
-                }
-            });
+        function downloadFile(filename) {
+            const fileURL = localStorage.getItem(filename);
+            const link = document.createElement('a');
+            link.href = fileURL;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
         }
 
         function showPopup(message) {
