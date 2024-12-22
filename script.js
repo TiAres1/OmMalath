@@ -56,22 +56,16 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         if (invalidPages.length > 0) {
             showPopup(`مين وين جبتي الصفحة ذي؟`);
-            removeBtn.disabled = false;
-            removeBtn.innerHTML = 'احذفها';
             return;
         }
 
         if (pagesToRemove.size === 0) {
             showPopup('اعتقيها مافيه الا هي');
-            removeBtn.disabled = false;
-            removeBtn.innerHTML = 'احذفها';
             return;
         }
 
         if (pagesToRemove.size === pageCount) {
             showPopup('كلها مره وحده؟ مايمدي');
-            removeBtn.disabled = false;
-            removeBtn.innerHTML = 'احذفها';
             return;
         }
 
@@ -86,9 +80,12 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         const newPdfBytes = await newPdf.save();
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
+        const fileURL = URL.createObjectURL(blob);
 
-        fileHistory.unshift(currentFile.name);
+        const newFileName = `edited-${currentFile.name}`;
+        localStorage.setItem(newFileName, fileURL);
+
+        fileHistory.unshift(newFileName);
         updateFileHistory();
         localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
 
@@ -127,9 +124,9 @@ function downloadFile(filename) {
         link.href = fileURL;
         link.download = filename;
         link.click();
-        link.remove(); // إزالة الرابط بعد الاستخدام
+        link.remove();
     } else {
-        showPopup('ملف التحميل غير متوفر!');
+        showPopup('اوف وين الملف؟ ماحصلت رابطه');
     }
 }
 
@@ -145,10 +142,10 @@ function showPopup(message) {
 }
 
 window.addEventListener('beforeunload', () => {
+    fileHistory.forEach(filename => localStorage.removeItem(filename));
     currentFile = null;
     document.getElementById('pageRange').value = '';
     document.getElementById('removeBtn').disabled = true;
 });
 
-// Load file history on page load
 document.addEventListener('DOMContentLoaded', updateFileHistory);
