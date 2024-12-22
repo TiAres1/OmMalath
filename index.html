@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
     <style>
         #pageRange:focus {
@@ -54,14 +55,16 @@
 
             <div class="space-y-4">
                 <input type="file" accept=".pdf" id="pdfInput" class="hidden">
-                <button onclick="document.getElementById('pdfInput').click()" class="text-white w-full py-2 px-4 bg-black rounded-lg text-right transition">اختاري الملف
+                <button onclick="document.getElementById('pdfInput').click()"
+                    class="text-white w-full py-2 px-4 bg-black rounded-lg text-right transition">اختاري الملف
                 </button>
 
                 <input type="text" id="pageRange" placeholder="حددي الصفحات"
                     class="text-sm flex w-100 p-2 rounded-lg bg-black text-white">
 
                 <button id="removeBtn" disabled
-                    class="flex justify-center mx-auto w-1/4 bg-[#002AFF] text-white py-1 px-2 rounded-lg hover:bg-[#780604] transition disabled:opacity-50 disabled:cursor-not-allowed" style="margin-top: calc(1.9rem * calc(1 - var(--tw-space-y-reverse)));">
+                    class="flex justify-center mx-auto w-1/4 bg-[#002AFF] text-white py-1 px-2 rounded-lg hover:bg-[#780604] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    style="margin-top: calc(1.9rem * calc(1 - var(--tw-space-y-reverse)));">
                     احذفها
                 </button>
             </div>
@@ -82,7 +85,176 @@
     <div id="output" class="message"></div>
     <div id="popupContainer" class="message"></div>
 
-    <script src="script.js"></script>
+    <script>
+        let currentFile = null;
+        const fileHistory = JSON.parse(localStorage.getItem('fileHistory')) || [];
+
+        document.getElementById('pdfInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    await PDFLib.PDFDocument.load(arrayBuffer); // محاولة تحميل الملف للتحقق من صلاحيته
+                    currentFile = file;
+                    document.getElementById('removeBtn').disabled = false;
+                    document.querySelector('button[onclick="document.getElementById(\'pdfInput\').click()"]').textContent = file.name;
+                } catch (error) {
+                    currentFile = null;
+                    document.getElementById('removeBtn').disabled = true;
+                    showPopup('متأكدة من الملف؟');
+                }
+            } else {
+                currentFile = null;
+                document.getElementById('removeBtn').disabled = true;
+                showPopup('لسى ماتطورت، خلك على PDF');
+            }
+        });
+
+        document.getElementById('removeBtn').addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            const pageRange = document.getElementById('pageRange').value;
+            if (!pageRange) {
+                showPopup('الصفحات ي أم ملاذ؟');
+                return;
+            }
+
+            if (!validatePageRange(pageRange)) {
+                showPopup('ماتمشي علي، حطي رقم لو سمحتي');
+                return;
+            }
+
+            const removeBtn = document.getElementById('removeBtn');
+
+            try {
+                const arrayBuffer = await currentFile.arrayBuffer();
+                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                const pageCount = pdfDoc.getPageCount();
+
+                const pagesToRemove = new Set();
+                const invalidPages = [];
+                pageRange.split('-').forEach(range => {
+                    const pageNum = Number(range) - 1;
+                    if (pageNum >= 0 && pageNum < pageCount) {
+                        pagesToRemove.add(pageNum);
+                    } else {
+                        invalidPages.push(pageNum + 1);
+                    }
+                });
+
+                if (invalidPages.length > 0) {
+                    showPopup(`مين وين جبتي الصفحة ذي؟`);
+                    return;
+                }
+
+                if (pagesToRemove.size === 0) {
+                    showPopup('اعتقيها مافيه الا هي');
+                    return;
+                }
+
+                if (pagesToRemove.size === pageCount) {
+                    showPopup('كلها مره وحده؟ مايمدي');
+                    return;
+                }
+
+                const newPdf = await PDFLib.PDFDocument.create();
+                const pages = pdfDoc.getPages();
+                for (let i = 0; i < pages.length; i++) {
+                    if (!pagesToRemove.has(i)) {
+                        const [copiedPage] = await newPdf.copyPages(pdfDoc, [i]);
+                        newPdf.addPage(copiedPage);
+                    }
+                }
+
+                const newPdfBytes = await newPdf.save();
+                const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
+
+                const newFileName = `new-${currentFile.name}`;
+
+                // Upload to Firebase Storage
+                const storageRef = firebase.storage().ref();
+                const fileRef = storageRef.child(`files/${newFileName}`);
+                await fileRef.put(blob);
+                const fileURL = await fileRef.getDownloadURL();
+
+                // Save file metadata to Firebase Realtime Database
+                const dbRef = firebase.database().ref('fileHistory');
+                const newFileRef = dbRef.push();
+                await newFileRef.set({
+                    name: newFileName,
+                    url: fileURL,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                fileHistory.unshift(newFileName);
+                localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
+
+                updateFileHistory();
+
+            } catch (error) {
+                showPopup('اوف وش صار؟ كلمي ابو ملاذ يصلحني');
+                console.error(error);
+            } finally {
+                removeBtn.disabled = false;
+                removeBtn.textContent = 'احذفها';
+            }
+        });
+
+        function validatePageRange(pageRange) {
+            const regex = /^(\d+(-\d+)*)$/;
+            return regex.test(pageRange);
+        }
+
+        function updateFileHistory() {
+            const historyList = document.getElementById('fileHistory');
+            historyList.innerHTML = fileHistory
+                .slice(0, 3)
+                .map(filename => `
+            <li class="flex items-center gap-2">
+                <span class="text-gray-600 text-sm filename">${filename}</span>
+                <span class="flex-grow border-t border-gray-300 mx-2"></span>
+                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFileFromFirebase('${filename}')"></i>
+            </li>
+        `)
+                .join('');
+        }
+
+        function downloadFileFromFirebase(filename) {
+            const dbRef = firebase.database().ref('fileHistory');
+            dbRef.orderByChild('name').equalTo(filename).once('value', snapshot => {
+                const fileData = snapshot.val();
+                if (fileData) {
+                    const fileURL = Object.values(fileData)[0].url;
+                    const link = document.createElement('a');
+                    link.href = fileURL;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                }
+            });
+        }
+
+        function showPopup(message) {
+            const popupContainer = document.getElementById('popupContainer');
+            const popup = document.createElement('div');
+            popup.className = 'bg-red-500 text-white p-2 rounded-lg shadow-lg mb-2';
+            popup.textContent = message;
+            popupContainer.appendChild(popup);
+            setTimeout(() => {
+                popup.remove();
+            }, 3000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            fileHistory.forEach(filename => localStorage.removeItem(filename));
+            currentFile = null;
+            document.getElementById('pageRange').value = '';
+            document.getElementById('removeBtn').disabled = true;
+        });
+
+        document.addEventListener('DOMContentLoaded', updateFileHistory);
+    </script>
 </body>
 
 </html>
