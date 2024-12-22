@@ -1,29 +1,12 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBkx13UA9elpV237vMGIu6rm4ZCeEM4afU",
-    authDomain: "absolute-bonsai-349616.firebaseapp.com",
-    databaseURL: "https://absolute-bonsai-349616-default-rtdb.firebaseio.com",
-    projectId: "absolute-bonsai-349616",
-    storageBucket: "absolute-bonsai-349616.firebasestorage.app",
-    messagingSenderId: "192867768515",
-    appId: "1:192867768515:web:6200aed1a39666e1deaa76",
-    measurementId: "G-MLW07L90BJ"
-};
-  
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-
 let currentFile = null;
-const fileHistory = [];
+const fileHistory = JSON.parse(localStorage.getItem('fileHistory')) || [];
 
 document.getElementById('pdfInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
         try {
             const arrayBuffer = await file.arrayBuffer();
-            await PDFLib.PDFDocument.load(arrayBuffer);
+            await PDFLib.PDFDocument.load(arrayBuffer); // محاولة تحميل الملف للتحقق من صلاحيته
             currentFile = file;
             document.getElementById('removeBtn').disabled = false;
             document.querySelector('button[onclick="document.getElementById(\'pdfInput\').click()"]').textContent = file.name;
@@ -35,7 +18,7 @@ document.getElementById('pdfInput').addEventListener('change', async (e) => {
     } else {
         currentFile = null;
         document.getElementById('removeBtn').disabled = true;
-        showPopup('لسى ماتطورت, خلك على PDF');
+        showPopup('لسى ماتطورت، خلك على PDF');
     }
 });
 
@@ -49,13 +32,11 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
     }
 
     if (!validatePageRange(pageRange)) {
-        showPopup('ماتمشي علي, حطي رقم لو سمحتي');
+        showPopup('ماتمشي علي، حطي رقم لو سمحتي');
         return;
     }
 
     const removeBtn = document.getElementById('removeBtn');
-    removeBtn.disabled = true;
-    removeBtn.innerHTML = '<span class="inline-block animate-spin">⌛</span>';
 
     try {
         const arrayBuffer = await currentFile.arrayBuffer();
@@ -75,22 +56,16 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         if (invalidPages.length > 0) {
             showPopup(`مين وين جبتي الصفحة ذي؟`);
-            removeBtn.disabled = false;
-            removeBtn.innerHTML = 'احذفها';
             return;
         }
 
         if (pagesToRemove.size === 0) {
             showPopup('اعتقيها مافيه الا هي');
-            removeBtn.disabled = false;
-            removeBtn.innerHTML = 'احذفها';
             return;
         }
 
         if (pagesToRemove.size === pageCount) {
             showPopup('كلها مره وحده؟ مايمدي');
-            removeBtn.disabled = false;
-            removeBtn.innerHTML = 'احذفها';
             return;
         }
 
@@ -105,15 +80,15 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         const newPdfBytes = await newPdf.save();
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
+        
+        const newFileName = `new-${currentFile.name}`;
+        const fileURL = `files/${newFileName}`;
+        fileHistory.unshift(newFileName);
+        localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
+        localStorage.setItem(newFileName, fileURL);
 
-        const fileRef = push(ref(database, 'files'));
-        await set(fileRef, {
-            name: currentFile.name,
-            url: url
-        });
+        downloadBlob(blob, newFileName);
 
-        fileHistory.unshift(currentFile.name);
         updateFileHistory();
 
     } catch (error) {
@@ -138,23 +113,30 @@ function updateFileHistory() {
             <li class="flex items-center gap-2">
                 <span class="text-gray-600 text-sm filename">${filename}</span>
                 <span class="flex-grow border-t border-gray-300 mx-2"></span>
-                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('${filename}')"></i>
+                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('files/${filename}')"></i>
             </li>
         `)
         .join('');
 }
 
-function downloadFile(filename) {
+function downloadFile(fileURL) {
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([filename], { type: 'application/pdf' }));
-    link.download = filename;
+    link.href = fileURL;
+    link.download = fileURL.split('/').pop();
+    document.body.appendChild(link);
     link.click();
+    link.remove();
+}
 
-    const icon = document.querySelector(`i[onclick="downloadFile('${filename}')"]`);
-    icon.classList.add('rotate');
-    setTimeout(() => {
-        icon.classList.remove('rotate');
-    }, 3000);
+function downloadBlob(blob, filename) {
+    const link = document.createElement('a');
+    const fileURL = `files/${filename}`;
+    link.href = fileURL;
+    link.download = filename;
+    document.body.appendChild(link); // إضافة الرابط إلى المستند
+    link.click();
+    URL.revokeObjectURL(link.href); // إلغاء الرابط المؤقت بعد التحميل
+    link.remove();
 }
 
 function showPopup(message) {
@@ -169,7 +151,10 @@ function showPopup(message) {
 }
 
 window.addEventListener('beforeunload', () => {
+    fileHistory.forEach(filename => localStorage.removeItem(filename));
     currentFile = null;
     document.getElementById('pageRange').value = '';
     document.getElementById('removeBtn').disabled = true;
 });
+
+document.addEventListener('DOMContentLoaded', updateFileHistory);
