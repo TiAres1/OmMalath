@@ -82,7 +82,7 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
         const fileURL = URL.createObjectURL(blob);
 
-        const newFileName = `edited-${currentFile.name}`;
+        const newFileName = `${currentFile.name}`;
         localStorage.setItem(newFileName, fileURL);
 
         fileHistory.unshift(newFileName);
