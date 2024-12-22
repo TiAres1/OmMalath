@@ -18,7 +18,7 @@ document.getElementById('pdfInput').addEventListener('change', async (e) => {
     } else {
         currentFile = null;
         document.getElementById('removeBtn').disabled = true;
-        showPopup('لسى ماتطورت, خلك على PDF');
+        showPopup('لسى ماتطورت، خلك على PDF');
     }
 });
 
@@ -32,7 +32,7 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
     }
 
     if (!validatePageRange(pageRange)) {
-        showPopup('ماتمشي علي, حطي رقم لو سمحتي');
+        showPopup('ماتمشي علي، حطي رقم لو سمحتي');
         return;
     }
 
@@ -127,7 +127,7 @@ function downloadFile(filename) {
         link.download = filename;
         link.click();
     } else {
-        showPopup('ملف التحميل غير متوفر!');
+        showPopup('ضيعت الملف والله، جربي اقين');
     }
 }
 
