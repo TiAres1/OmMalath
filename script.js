@@ -37,8 +37,6 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
     }
 
     const removeBtn = document.getElementById('removeBtn');
-    removeBtn.disabled = true;
-    removeBtn.innerHTML = '<span class="inline-block animate-spin">⌛</span>';
 
     try {
         const arrayBuffer = await currentFile.arrayBuffer();
