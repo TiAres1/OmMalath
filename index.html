@@ -86,6 +86,20 @@
     <div id="popupContainer" class="message"></div>
 
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDANR7sMBIXr1xgHlwZieqARh05l17Wn9k",
+            authDomain: "ommalath-469ea.firebaseapp.com",
+            databaseURL: "https://ommalath-469ea-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "ommalath-469ea",
+            storageBucket: "ommalath-469ea.firebasestorage.app",
+            messagingSenderId: "36334554434",
+            appId: "1:36334554434:web:3cfbdaba6a3f941e608cdb",
+            measurementId: "G-LBYBV0GV27"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
         let currentFile = null;
         const fileHistory = JSON.parse(localStorage.getItem('fileHistory')) || [];
 
