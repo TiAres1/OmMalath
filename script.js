@@ -124,7 +124,8 @@ function downloadFile(filename) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([filename], { type: 'application/pdf' }));
     link.download = filename;
-    link.click(); // Programmatically click the link to trigger the download
+    output.innerHTML = '';
+    output.appendChild(link);
 
     const icon = document.querySelector(`i[onclick="downloadFile('${filename}')"]`);
     icon.classList.add('rotate');
