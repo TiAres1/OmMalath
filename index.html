@@ -191,6 +191,9 @@
 
                 updateFileHistory();
 
+                // Open the link in another page
+                window.open(fileURL, '_blank');
+
             } catch (error) {
                 showPopup('اوف وش صار؟ كلمي ابو ملاذ يصلحني');
                 console.error(error);
