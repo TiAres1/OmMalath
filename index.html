@@ -91,7 +91,7 @@
             if (file && file.type === 'application/pdf') {
                 try {
                     const arrayBuffer = await file.arrayBuffer();
-                    await PDFLib.PDFDocument.load(arrayBuffer); // محاولة تحميل الملف للتحقق من صلاحيته
+                    await PDFLib.PDFDocument.load(arrayBuffer);
                     currentFile = file;
                     document.getElementById('removeBtn').disabled = false;
                     document.querySelector('button[onclick="document.getElementById(\'pdfInput\').click()"]').textContent = file.name;
@@ -184,14 +184,12 @@
 
                 const fileURL = result.link;
 
-                // Save file metadata to localStorage
                 fileHistory.unshift(newFileName);
                 localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
                 localStorage.setItem(newFileName, fileURL);
 
                 updateFileHistory();
 
-                // Open the link in another page
                 window.open(fileURL, '_blank');
 
             } catch (error) {
