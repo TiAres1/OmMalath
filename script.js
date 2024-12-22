@@ -80,12 +80,13 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         const newPdfBytes = await newPdf.save();
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
+        const fileURL = URL.createObjectURL(blob);
 
         const newFileName = `new-${currentFile.name}`;
         fileHistory.unshift(newFileName);
         localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
+        localStorage.setItem(newFileName, fileURL);
 
-        // تحميل الملف مباشرة
         downloadBlob(blob, newFileName);
 
         updateFileHistory();
@@ -112,19 +113,33 @@ function updateFileHistory() {
             <li class="flex items-center gap-2">
                 <span class="text-gray-600 text-sm filename">${filename}</span>
                 <span class="flex-grow border-t border-gray-300 mx-2"></span>
-                <button onclick="showPopup('للتحميل، جرب الزر الموجود!')" class="text-blue-500 hover:underline">محفوظ</button>
+                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('${filename}')"></i>
             </li>
         `)
         .join('');
+}
+
+function downloadFile(filename) {
+    const fileURL = localStorage.getItem(filename);
+    if (fileURL) {
+        const link = document.createElement('a');
+        link.href = fileURL;
+        link.download = filename;
+        link.click();
+        link.remove();
+    } else {
+        showPopup('وين الرابط؟ كلمي مازن يصلحني');
+    }
 }
 
 function downloadBlob(blob, filename) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
-    document.body.appendChild(link); // إضافة الرابط للمستند
+    document.body.appendChild(link); // إضافة الرابط إلى المستند
     link.click();
-    link.remove(); // إزالة الرابط بعد الاستخدام
+    URL.revokeObjectURL(link.href); // إلغاء الرابط المؤقت بعد التحميل
+    link.remove();
 }
 
 function showPopup(message) {
