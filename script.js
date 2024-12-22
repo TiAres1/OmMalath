@@ -126,6 +126,7 @@ function downloadFile(filename) {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([filename], { type: 'application/pdf' }));
     link.download = filename;
+    link.click(); // Programmatically click the link to trigger the download
 
     const icon = document.querySelector(`i[onclick="downloadFile('${filename}')"]`);
     icon.classList.add('rotate');
@@ -133,7 +134,6 @@ function downloadFile(filename) {
         icon.classList.remove('rotate');
     }, 3000);
 }
-
 function showPopup(message) {
     const popupContainer = document.getElementById('popupContainer');
     const popup = document.createElement('div');
