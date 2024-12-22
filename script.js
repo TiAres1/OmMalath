@@ -83,6 +83,7 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
         
         const newFileName = `new-${currentFile.name}`;
         const fileURL = `files/${newFileName}`;
+        
         fileHistory.unshift(newFileName);
         localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
         localStorage.setItem(newFileName, fileURL);
@@ -130,12 +131,12 @@ function downloadFile(fileURL) {
 
 function downloadBlob(blob, filename) {
     const link = document.createElement('a');
-    const fileURL = `files/${filename}`;
+    const fileURL = URL.createObjectURL(blob);
     link.href = fileURL;
     link.download = filename;
-    document.body.appendChild(link); // إضافة الرابط إلى المستند
+    document.body.appendChild(link); 
     link.click();
-    URL.revokeObjectURL(link.href); // إلغاء الرابط المؤقت بعد التحميل
+    URL.revokeObjectURL(link.href);
     link.remove();
 }
 
