@@ -80,9 +80,9 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         const newPdfBytes = await newPdf.save();
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
-        const fileURL = URL.createObjectURL(blob);
-
+        
         const newFileName = `new-${currentFile.name}`;
+        const fileURL = `files/${newFileName}`;
         fileHistory.unshift(newFileName);
         localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
         localStorage.setItem(newFileName, fileURL);
@@ -113,28 +113,25 @@ function updateFileHistory() {
             <li class="flex items-center gap-2">
                 <span class="text-gray-600 text-sm filename">${filename}</span>
                 <span class="flex-grow border-t border-gray-300 mx-2"></span>
-                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('${filename}')"></i>
+                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('files/${filename}')"></i>
             </li>
         `)
         .join('');
 }
 
-function downloadFile(filename) {
-    const fileURL = localStorage.getItem(filename);
-    if (fileURL) {
-        const link = document.createElement('a');
-        link.href = fileURL;
-        link.download = filename;
-        link.click();
-        link.remove();
-    } else {
-        showPopup('وين الرابط؟ كلمي مازن يصلحني');
-    }
+function downloadFile(fileURL) {
+    const link = document.createElement('a');
+    link.href = fileURL;
+    link.download = fileURL.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 function downloadBlob(blob, filename) {
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    const fileURL = `files/${filename}`;
+    link.href = fileURL;
     link.download = filename;
     document.body.appendChild(link); // إضافة الرابط إلى المستند
     link.click();
