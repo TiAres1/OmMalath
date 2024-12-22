@@ -80,12 +80,11 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
 
         const newPdfBytes = await newPdf.save();
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
-        const fileURL = URL.createObjectURL(blob);
 
         const newFileName = `new-${currentFile.name}`;
         fileHistory.unshift(newFileName);
         localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
-        localStorage.setItem(newFileName, fileURL);
+        localStorage.setItem(newFileName, URL.createObjectURL(blob));
 
         downloadBlob(blob, newFileName);
 
@@ -113,7 +112,8 @@ function updateFileHistory() {
             <li class="flex items-center gap-2">
                 <span class="text-gray-600 text-sm filename">${filename}</span>
                 <span class="flex-grow border-t border-gray-300 mx-2"></span>
-                <i class="fa-solid fa-circle-arrow-down rotate-icon" onclick="downloadFile('${filename}')"></i>
+                <button onclick="downloadFile('${filename}')"
+                    class="text-blue-500 hover:underline">تحميل</button>
             </li>
         `)
         .join('');
@@ -126,7 +126,6 @@ function downloadFile(filename) {
         link.href = fileURL;
         link.download = filename;
         link.click();
-        link.remove();
     } else {
         showPopup('ملف التحميل غير متوفر!');
     }
@@ -137,7 +136,6 @@ function downloadBlob(blob, filename) {
     link.href = URL.createObjectURL(blob);
     link.download = filename;
     link.click();
-    link.remove();
 }
 
 function showPopup(message) {
