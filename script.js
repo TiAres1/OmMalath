@@ -82,12 +82,14 @@ document.getElementById('removeBtn').addEventListener('click', async () => {
         const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
         const fileURL = URL.createObjectURL(blob);
 
-        const newFileName = `${currentFile.name}`;
+        const newFileName = `new-${currentFile.name}`;
+        fileHistory.unshift(newFileName);
+        localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
         localStorage.setItem(newFileName, fileURL);
 
-        fileHistory.unshift(newFileName);
+        downloadBlob(blob, newFileName);
+
         updateFileHistory();
-        localStorage.setItem('fileHistory', JSON.stringify(fileHistory));
 
     } catch (error) {
         showPopup('اوف وش صار؟ كلمي ابو ملاذ يصلحني');
@@ -126,8 +128,16 @@ function downloadFile(filename) {
         link.click();
         link.remove();
     } else {
-        showPopup('اوف وين الملف؟ ماحصلت رابطه');
+        showPopup('ملف التحميل غير متوفر!');
     }
+}
+
+function downloadBlob(blob, filename) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    link.remove();
 }
 
 function showPopup(message) {
