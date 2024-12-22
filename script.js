@@ -121,18 +121,18 @@ function updateFileHistory() {
 }
 
 function downloadFile(filename) {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([filename], { type: 'application/pdf' }));
-    link.download = filename;
-    output.innerHTML = '';
-    output.appendChild(link);
-
-    const icon = document.querySelector(`i[onclick="downloadFile('${filename}')"]`);
-    icon.classList.add('rotate');
-    setTimeout(() => {
-        icon.classList.remove('rotate');
-    }, 3000);
+    const fileURL = localStorage.getItem(filename);
+    if (fileURL) {
+        const link = document.createElement('a');
+        link.href = fileURL;
+        link.download = filename;
+        link.click();
+        link.remove(); // إزالة الرابط بعد الاستخدام
+    } else {
+        showPopup('ملف التحميل غير متوفر!');
+    }
 }
+
 function showPopup(message) {
     const popupContainer = document.getElementById('popupContainer');
     const popup = document.createElement('div');
